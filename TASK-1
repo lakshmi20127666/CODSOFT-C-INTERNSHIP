@@ -1,0 +1,39 @@
+#include <iostream>
+#include <cstdlib>
+#include <ctime>
+
+using namespace std;
+
+int main() {
+    // Seed the random number generator with the current time
+    srand(static_cast<unsigned>(time(0)));
+    int randomNumber = rand() % 100 + 1; // Random number between 1 and 100
+    int guess = 0;
+
+    cout << "I'm thinking of a number between 1 and 100. Can you guess it?" << endl;
+
+    // Loop until the user guesses the correct number
+    while (true) {
+        cout << "Enter your guess: ";
+        cin >> guess;
+
+        // Check if the input is a valid integer
+        if (cin.fail()) {
+            cin.clear(); // Clear the error flag
+            cin.ignore(numeric_limits<streamsize>::max(), '\n'); // Ignore invalid input
+            cout << "Invalid input. Please enter a valid integer." << endl;
+            continue;
+        }
+
+        if (guess < randomNumber) {
+            cout << "Too low! Try again." << endl;
+        } else if (guess > randomNumber) {
+            cout << "Too high! Try again." << endl;
+        } else {
+            cout << "Congratulations! You guessed the correct number: " << randomNumber << endl;
+            break;
+        }
+    }
+
+    return 0;
+}
