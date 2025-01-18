@@ -1,0 +1,185 @@
+#include <iostream>
+#include <vector>
+#include <string>
+#include <map>
+#include <ctime>
+using namespace std;
+
+// Structure to represent a book
+struct Book {
+    string title;
+    string author;
+    string isbn;
+    bool isAvailable;
+};
+
+// Structure to represent a borrower transaction
+struct Transaction {
+    string borrowerName;
+    string isbn;
+    time_t checkoutDate;
+    time_t returnDate;
+};
+
+// Fine rate per day
+const double fineRate = 1.0;
+
+// Global database for books and transactions
+vector<Book> books;
+vector<Transaction> transactions;
+
+// Function to display the menu
+void displayMenu() {
+    cout << "\nLibrary Management System\n";
+    cout << "1. Add Book\n";
+    cout << "2. Search Book\n";
+    cout << "3. Checkout Book\n";
+    cout << "4. Return Book\n";
+    cout << "5. View Transactions\n";
+    cout << "6. Exit\n";
+    cout << "Enter your choice: ";
+}
+
+// Function to add a book to the database
+void addBook() {
+    Book book;
+    cout << "Enter book title: ";
+    cin.ignore();
+    getline(cin, book.title);
+    cout << "Enter author name: ";
+    getline(cin, book.author);
+    cout << "Enter ISBN: ";
+    getline(cin, book.isbn);
+    book.isAvailable = true;
+    books.push_back(book);
+    cout << "Book added successfully!\n";
+}
+
+// Function to search for books
+void searchBook() {
+    string query;
+    cout << "Enter title, author, or ISBN to search: ";
+    cin.ignore();
+    getline(cin, query);
+
+    bool found = false;
+    for (const auto& book : books) {
+        if (book.title == query || book.author == query || book.isbn == query) {
+            cout << "Title: " << book.title
+                 << ", Author: " << book.author
+                 << ", ISBN: " << book.isbn
+                 << ", Availability: " << (book.isAvailable ? "Available" : "Checked Out") << "\n";
+            found = true;
+        }
+    }
+
+    if (!found) {
+        cout << "No books found matching the search query.\n";
+    }
+}
+
+// Function to checkout a book
+void checkoutBook() {
+    string isbn, borrowerName;
+    cout << "Enter ISBN of the book to checkout: ";
+    cin.ignore();
+    getline(cin, isbn);
+
+    auto it = find_if(books.begin(), books.end(), [&isbn](const Book& b) { return b.isbn == isbn && b.isAvailable; });
+
+    if (it != books.end()) {
+        cout << "Enter borrower's name: ";
+        getline(cin, borrowerName);
+
+        it->isAvailable = false;
+        Transaction txn = {borrowerName, isbn, time(0), 0};
+        transactions.push_back(txn);
+
+        cout << "Book checked out successfully to " << borrowerName << ".\n";
+    } else {
+        cout << "Book is either unavailable or does not exist.\n";
+    }
+}
+
+// Function to return a book
+void returnBook() {
+    string isbn;
+    cout << "Enter ISBN of the book to return: ";
+    cin.ignore();
+    getline(cin, isbn);
+
+    auto it = find_if(books.begin(), books.end(), [&isbn](const Book& b) { return b.isbn == isbn && !b.isAvailable; });
+
+    if (it != books.end()) {
+        it->isAvailable = true;
+
+        auto txnIt = find_if(transactions.begin(), transactions.end(),
+                             [&isbn](const Transaction& t) { return t.isbn == isbn && t.returnDate == 0; });
+
+        if (txnIt != transactions.end()) {
+            txnIt->returnDate = time(0);
+            double fine = 0;
+            int daysOverdue = (txnIt->returnDate - txnIt->checkoutDate) / (24 * 60 * 60) - 14; // Assuming 14 days lending period
+            if (daysOverdue > 0) {
+                fine = daysOverdue * fineRate;
+            }
+
+            cout << "Book returned successfully.\n";
+            if (fine > 0) {
+                cout << "Fine for overdue: $" << fine << "\n";
+            }
+        }
+    } else {
+        cout << "Book is either not checked out or does not exist.\n";
+    }
+}
+
+// Function to view all transactions
+void viewTransactions() {
+    if (transactions.empty()) {
+        cout << "No transactions recorded.\n";
+        return;
+    }
+
+    for (const auto& txn : transactions) {
+        cout << "Borrower: " << txn.borrowerName
+             << ", ISBN: " << txn.isbn
+             << ", Checkout Date: " << ctime(&txn.checkoutDate)
+             << ", Return Date: " << (txn.returnDate ? ctime(&txn.returnDate) : "Not Returned Yet") << "\n";
+    }
+}
+
+// Main function
+int main() {
+    int choice;
+
+    do {
+        displayMenu();
+        cin >> choice;
+
+        switch (choice) {
+            case 1:
+                addBook();
+                break;
+            case 2:
+                searchBook();
+                break;
+            case 3:
+                checkoutBook();
+                break;
+            case 4:
+                returnBook();
+                break;
+            case 5:
+                viewTransactions();
+                break;
+            case 6:
+                cout << "Exiting the Library Management System. Goodbye!\n";
+                break;
+            default:
+                cout << "Invalid choice. Please try again.\n";
+        }
+    } while (choice != 6);
+
+    return 0;
+}
